@@ -82,6 +82,19 @@ pub fn main() !void {
     defer device.close();
     std.debug.print("Listening on {s}...\n", .{device_name});
 
+    if (std.posix.system.ioctl(
+        device.handle,
+        input.EVIOCGRAB,
+        @as(usize, 1),
+    ) != 0)
+        return error.EVIOCGRAB_FAILED;
+
+    defer _ = std.posix.system.ioctl(
+        device.handle,
+        input.EVIOCGRAB,
+        @as(usize, 0),
+    );
+
     const daemon_socket = try std.posix.socket(
         std.posix.AF.UNIX,
         std.posix.SOCK.DGRAM,
@@ -113,7 +126,7 @@ pub fn main() !void {
             @ptrCast(&event),
             event_size,
         ) == event_size) {
-            if (event.type == input.EV_KEY) {
+            if (event.type == input.EV_KEY and (event.value == 1 or event.value == 2)) {
                 switch (event.code) {
                     input.KEY_H => {
                         move_mouse(daemon_socket, .{ .x = -10, .y = 0 });
@@ -136,7 +149,7 @@ pub fn main() !void {
                     input.KEY_DOT => {
                         mouse_click(daemon_socket, .right);
                     },
-                    input.KEY_C => return,
+                    input.KEY_C => break,
                     else => {
                         std.debug.print("Key code {d} {d}\n", .{
                             event.code,
