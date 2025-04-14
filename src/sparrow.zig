@@ -113,9 +113,7 @@ pub fn main() !void {
             @ptrCast(&event),
             event_size,
         ) == event_size) {
-            if (event.type == input.EV_KEY and
-                (event.value == 2 or event.value == 1))
-            {
+            if (event.type == input.EV_KEY) {
                 switch (event.code) {
                     input.KEY_H => {
                         move_mouse(daemon_socket, .{ .x = -10, .y = 0 });
@@ -138,6 +136,7 @@ pub fn main() !void {
                     input.KEY_DOT => {
                         mouse_click(daemon_socket, .right);
                     },
+                    input.KEY_C => return,
                     else => {
                         std.debug.print("Key code {d} {d}\n", .{
                             event.code,
@@ -145,7 +144,7 @@ pub fn main() !void {
                         });
                     },
                 }
-                syncronize(device.handle);
+                syncronize(daemon_socket);
             }
         }
     }
